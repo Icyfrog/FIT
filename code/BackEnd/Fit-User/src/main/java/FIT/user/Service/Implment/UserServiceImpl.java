@@ -1,9 +1,12 @@
 package FIT.user.Service.Implment;
 
 
+import FIT.user.Dao.FoodTypeDao;
 import FIT.user.Dao.UserDao;
+import FIT.user.Entity.FoodTpye;
 import FIT.user.Entity.User;
 import FIT.user.Service.UserService;
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpException;
@@ -33,6 +36,9 @@ public class UserServiceImpl implements UserService {
 
     @Autowired
     private UserDao userDao;
+
+    @Autowired
+    private FoodTypeDao foodTypeDao;
 
     /**
      * findByTel
@@ -66,6 +72,33 @@ public class UserServiceImpl implements UserService {
         HttpEntity httpEntity = response.getEntity();
         String result = EntityUtils.toString(httpEntity, "utf-8");
         return result;
+    }
+
+    @Override
+    public JSONArray findFoodInfo(JSONObject foodList) {
+
+        JSONArray foodType_list = new JSONArray();
+        if(!foodList.getString("name1").equals( "NULL")) {
+
+
+            FoodTpye ft = foodTypeDao.findByName(foodList.getString("name1"));
+
+            String jsonString = JSONObject.toJSONString(ft);
+
+            JSONObject jsonObject = JSONObject.parseObject(jsonString);
+
+            foodType_list.add(jsonObject);
+        }
+        if(!foodList.getString("name2").equals( "NULL")) {
+            foodType_list.add(foodTypeDao.findByName(foodList.getString("name2")));
+        }
+        if(!foodList.getString("name3").equals( "NULL")) {
+            foodType_list.add(foodTypeDao.findByName(foodList.getString("name3")));
+        }
+        if(!foodList.getString("name4").equals( "NULL")) {
+            foodType_list.add(foodTypeDao.findByName(foodList.getString("name4")));
+        }
+        return foodType_list;
     }
 
     /**
@@ -163,8 +196,8 @@ public class UserServiceImpl implements UserService {
         String content = new String("您的验证码是：" + mobile_code + "。请不要把验证码泄露给其他人。");
 
         NameValuePair[] data = { // 提交短信
-                new NameValuePair("account", "C35851249"), // 查看用户名是登录用户中心->验证码短信->产品总览->APIID
-                new NameValuePair("password", "14227d803ba627befcad8fbbfb269a3d"), // 查看密码请登录用户中心->验证码短信->产品总览->APIKEY
+                new NameValuePair("account", "C26414280"), // 查看用户名是登录用户中心->验证码短信->产品总览->APIID
+                new NameValuePair("password", "3c487ebfb6c914180f6c1ac5972c85d5"), // 查看密码请登录用户中心->验证码短信->产品总览->APIKEY
                 // new NameValuePair("password", util.StringUtil.MD5Encode("密码")),
                 new NameValuePair("mobile", tel), new NameValuePair("content", content),};
         method.setRequestBody(data);

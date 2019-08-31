@@ -19,8 +19,8 @@ public class RecordDao {
         for(Record item: iterable) {
             String time = item.getTimeStamp();
             System.out.println(time);
-            if (time.compareTo(start_time) > 0 && time.compareTo(end_time) < 0 &&
-                    !item.getFood().equals("苑齐超未知") && !item.getFood().equals( "苑齐超不知道")) {
+            if ((time.compareTo(start_time) > 0) && (time.compareTo(end_time) < 0) &&
+                    !item.getFood().equals("苑齐超未知") && !item.getFood().equals("苑齐超不知道")) {
                 jsonArray.add(item);
             }
         }

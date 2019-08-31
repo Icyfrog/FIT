@@ -1,6 +1,7 @@
 package FIT.user.Service;
 
 import FIT.user.Entity.User;
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 
 public interface UserService {
@@ -21,5 +22,7 @@ public interface UserService {
 
     Iterable<User> findAll();
 
-    String  getNews() throws Exception;
+    String getNews() throws Exception;
+
+    JSONArray findFoodInfo(JSONObject foodList);
 }

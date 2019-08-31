@@ -16,6 +16,6 @@ public class UserRepositoryTest {
 
     @Test
     public void findByTel() {
-        Assert.assertEquals("Test UserDao.findByTel", "Axe", userRepository.findByTel("102").getNickName());
+        Assert.assertEquals("Test UserDao.findByTel", "队友呢", userRepository.findByTel("6827").getNickName());
     }
 }

@@ -12,7 +12,6 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 
-
 @CrossOrigin(origins = "*", maxAge = 3600)
 @Controller
 @RequestMapping(path = "/user")
@@ -170,5 +169,11 @@ public class UsersController {
         JSONArray jsonArray = JSONArray.parseArray(st);
         // 我给我自己发请求？ 嗯 就是这个亚子
         return jsonArray;
+    }
+
+    @CrossOrigin(origins = "*", maxAge = 3600)
+    @PostMapping(path = "/foodInfo")
+    public @ResponseBody JSONArray getFoodInfo(@RequestBody JSONObject ss) {
+        return userService.findFoodInfo(ss);
     }
 }
