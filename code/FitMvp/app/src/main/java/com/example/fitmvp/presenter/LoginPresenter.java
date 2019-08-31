@@ -3,6 +3,7 @@ package com.example.fitmvp.presenter;
 import android.text.TextUtils;
 
 import com.example.fitmvp.base.BasePresenter;
+import com.example.fitmvp.bean.LoginUserBean;
 import com.example.fitmvp.contract.LoginContract;
 import com.example.fitmvp.model.FriendModel;
 import com.example.fitmvp.model.LoginModel;
@@ -50,27 +51,45 @@ public class LoginPresenter extends BasePresenter<LoginActivity> implements Logi
             final FriendModel friendModel = (FriendModel) getiModelMap().get("initFriends");
             loginModel.login(account, password, new LoginContract.Model.InfoHint() {
                 @Override
-                public void successInfo() {
+                public void successInfo(final LoginUserBean user) {
                     // 登录成功后在JMessage中也进行登录
                     JMessageClient.login(account, password, new BasicCallback() {
                         @Override
                         public void gotResult(int responseCode, String responseMessage) {
                             if (responseCode == 0){
                                 // 登录成功，在本地保存用户信息
-                                loginModel.saveUser();
-                                // 初始化好友列表
-                                friendModel.initFriendList();
-                                // 初始化好友请求记录
+                                loginModel.saveUser(user, new LoginContract.Model.InfoHint() {
+                                    @Override
+                                    public void successInfo(LoginUserBean user) {
+                                    }
 
-                                // 页面跳转
-                                ToastUtil.setToast("登录成功");
-                                getIView().loginSuccess();
+                                    @Override
+                                    public void loginSuccess() {
+                                        // 页面跳转
+                                        ToastUtil.setToast("登录成功");
+                                        getIView().loginSuccess();
+//                                        // 初始化好友列表
+//                                        friendModel.initFriendList();
+                                    }
+
+                                    @Override
+                                    public void errorInfo(String str) {
+                                    }
+
+                                    @Override
+                                    public void failInfo(String str) {
+                                    }
+                                });
                             }
                             else{
                                 getIView().loginFail("登录失败",responseMessage);
                             }
                         }
                     });
+                }
+
+                @Override
+                public void loginSuccess() {
                 }
 
                 @Override
@@ -84,6 +103,9 @@ public class LoginPresenter extends BasePresenter<LoginActivity> implements Logi
                     getIView().loginFail("登录失败",str);  //失败
                 }
             });
+        }
+        else{
+            getIView().setButton();
         }
     }
 }

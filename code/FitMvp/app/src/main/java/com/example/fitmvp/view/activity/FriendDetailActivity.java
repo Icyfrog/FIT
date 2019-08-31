@@ -1,10 +1,19 @@
 package com.example.fitmvp.view.activity;
 
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.os.Handler;
 import android.text.TextUtils;
+import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -24,7 +33,8 @@ import com.example.fitmvp.contract.FriendContract;
 import com.example.fitmvp.database.FriendEntry;
 import com.example.fitmvp.presenter.FriendDetailPresenter;
 import com.example.fitmvp.utils.LogUtils;
-import com.example.fitmvp.view.fragment.friends.FragmentFrdList;
+
+import java.lang.reflect.Method;
 
 import butterknife.Bind;
 import butterknife.ButterKnife;
@@ -74,11 +84,83 @@ public class FriendDetailActivity extends BaseActivity<FriendDetailPresenter> im
     private String avatar;
     private String gender;
     private String birthday;
+
+    @Override
+    protected void setBar(){
+        ActionBar actionbar = getSupportActionBar();
+        //显示返回箭头默认是不显示的
+        actionbar.setDisplayHomeAsUpEnabled(true);
+        //显示左侧的返回箭头，并且返回箭头和title一直设置返回箭头才能显示
+        actionbar.setDisplayShowHomeEnabled(true);
+        actionbar.setDisplayUseLogoEnabled(true);
+        //显示标题
+        actionbar.setDisplayShowTitleEnabled(true);
+
+        intent = getIntent();
+        isFriend = intent.getBooleanExtra("isFriend",false);
+
+        String title;
+        if(isFriend){
+            title = "详细信息";
+        }
+        else{
+            title = "添加好友";
+        }
+        actionbar.setTitle(title);
+    }
+
+    // 右上角的菜单栏 - 进入好友信息界面
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.friendmenu, menu);
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        // 如果是好友，显示右上角的菜单栏
+        if(isFriend){
+            menu.findItem(R.id.set_notename).setVisible(true);
+            menu.findItem(R.id.delete_friend).setVisible(true);
+            try{
+                Method m = menu.getClass().getDeclaredMethod("setOptionalIconsVisible", Boolean.TYPE);
+                m.setAccessible(true);
+                m.invoke(menu, true);
+            } catch (Exception e) {
+                Log.e(getClass().getSimpleName(), "onMenuOpened...unable to set icons for overflow menu", e);
+            }
+        }
+        // 如果不是好友，不显示右上角的菜单栏
+        else{
+            menu.findItem(R.id.set_notename).setVisible(false);
+            menu.findItem(R.id.delete_friend).setVisible(false);
+        }
+        return super.onPrepareOptionsMenu(menu);
+    }
+
+    // ActionBar 功能
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case android.R.id.home://actionbar的左侧图标的点击事件处理
+                onBackPressed();
+                break;
+            case R.id.set_notename:
+                toSetNoteName();
+                break;
+            case R.id.delete_friend:
+                deleteFriend();
+                break;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
     @Override
     protected void initView() {
         ButterKnife.bind(this);
-        intent = getIntent();
-        isFriend = intent.getBooleanExtra("isFriend",false);
+        //注册刷新Fragment数据的方法
+        registerReceiver();
+
         phone = intent.getStringExtra("phone");
         // 所有需要的参数都被传入
         if(phone != null){
@@ -91,6 +173,7 @@ public class FriendDetailActivity extends BaseActivity<FriendDetailPresenter> im
         }
         // 只传入用户名，由聊天界面进入好友信息界面
         else{
+            // isFriend = intent.getBooleanExtra("isFriend",false);
             isFriend = true;
             phone = intent.getStringExtra("TargetId");
             FriendEntry friendEntry = FriendEntry.getFriend(BaseApplication.getUserEntry(),
@@ -101,15 +184,12 @@ public class FriendDetailActivity extends BaseActivity<FriendDetailPresenter> im
                 avatar = friendEntry.avatar;
                 gender = friendEntry.gender;
                 birthday = friendEntry.birthday;
-                button_type = 1;
             }
-            else {
-                // 不再是好友？
-            }
+            button_type = 1;
         }
 
         // 显示头像
-        if(avatar!=null){
+        if(avatar!=null && !avatar.equals("")){
             photo.setImageBitmap(BitmapFactory.decodeFile(avatar));
         }
         else{
@@ -182,26 +262,6 @@ public class FriendDetailActivity extends BaseActivity<FriendDetailPresenter> im
         }
     }
 
-    @Override
-    protected void setBar(){
-        ActionBar actionbar = getSupportActionBar();
-        //显示返回箭头默认是不显示的
-        actionbar.setDisplayHomeAsUpEnabled(true);
-        //显示左侧的返回箭头，并且返回箭头和title一直设置返回箭头才能显示
-        actionbar.setDisplayShowHomeEnabled(true);
-        actionbar.setDisplayUseLogoEnabled(true);
-        //显示标题
-        actionbar.setDisplayShowTitleEnabled(true);
-        String title;
-        if(isFriend){
-            title = "详细信息";
-        }
-        else{
-            title = "添加好友";
-        }
-        actionbar.setTitle(title);
-    }
-
     protected FriendDetailPresenter loadPresenter() {
         return new FriendDetailPresenter();
     }
@@ -252,7 +312,7 @@ public class FriendDetailActivity extends BaseActivity<FriendDetailPresenter> im
             // 跳转至发送验证消息界面，传好友手机号
             Intent newIntent = new Intent();
             newIntent.setClass(FriendDetailActivity.this, FriendAddActivity.class);
-            newIntent.putExtra("targetUser",intent.getStringExtra("phone"));
+            newIntent.putExtra("targetUser",phone);
             startActivity(newIntent);
         }
         else{
@@ -272,12 +332,89 @@ public class FriendDetailActivity extends BaseActivity<FriendDetailPresenter> im
         }
     }
 
-    //发送刷新数据的广播
+    //发送刷新好友列表的广播
     public void updateFriendList(){
         Intent friendIntent = new Intent("updateFriendList");
-        friendIntent.putExtra("refreshInfo", "yes");
         LocalBroadcastManager.getInstance(FriendDetailActivity.this).sendBroadcast(friendIntent);
-        this.setResult(Activity.RESULT_OK, friendIntent);//返回页面1
-        this.finish();
+    }
+
+    // 发送刷新聊天记录的广播
+    public void updateMsgList(){
+        Intent msgIntent = new Intent("updateMsgList");
+        LocalBroadcastManager.getInstance(FriendDetailActivity.this).sendBroadcast(msgIntent);
+    }
+
+    // 发送刷新验证消息的广播
+    public void updateRecommend(){
+        Intent intent = new Intent("updateRecommend");
+        LocalBroadcastManager.getInstance(FriendDetailActivity.this).sendBroadcast(intent);
+    }
+
+    // 跳转至修改备注名的页面
+    private void toSetNoteName(){
+        Intent newIntent = new Intent();
+        if(!noteName.equals("")){
+            noteName = show_notename.getText().toString().trim();
+        }
+        newIntent.putExtra("noteName",noteName);
+        newIntent.putExtra("userName",phone);
+        newIntent.setClass(FriendDetailActivity.this, FriendSettingActivity.class);
+        startActivity(newIntent);
+    }
+
+    private void deleteFriend(){
+        AlertDialog.Builder builder = new AlertDialog.Builder(FriendDetailActivity.this);
+        builder.setTitle("删除好友");
+        builder.setMessage("将好友 “"+nickName+"”删除，将同时删除与该好友的聊天记录");
+        builder.setCancelable(true);
+        builder.setPositiveButton("删除", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                mPresenter.deleteFriend(phone);
+            }
+        });
+        builder.setNegativeButton("取消", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                LogUtils.e("delete_friend","cancel");
+                dialogInterface.dismiss();
+            }
+        });
+        builder.show();
+    }
+
+    private LocalBroadcastManager broadcastManager;
+
+    //注册广播接收器
+    private void registerReceiver() {
+        broadcastManager = LocalBroadcastManager.getInstance(this);
+        IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction("updateFriendNoteName");
+        broadcastManager.registerReceiver(mRefreshReceiver, intentFilter);
+    }
+
+    // 接收广播，刷新好友备注名
+    private BroadcastReceiver mRefreshReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, final Intent intent) {
+            String action = intent.getAction();
+            if ("updateFriendNoteName".equals(action)) {
+                // 在主线程中刷新UI，用Handler来实现
+                new Handler().post(new Runnable() {
+                    public void run() {
+                        //在这里来写你需要刷新的地方
+                        String newNoteName = intent.getStringExtra("newNoteName");
+                        show_notename.setText(newNoteName);
+                    }
+                });
+            }
+        }
+    };
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        //注销广播
+        broadcastManager.unregisterReceiver(mRefreshReceiver);
     }
 }

@@ -10,8 +10,6 @@ import com.example.fitmvp.utils.SpUtils;
 import com.example.fitmvp.utils.ToastUtil;
 import com.example.fitmvp.utils.UserUtils;
 
-import java.util.List;
-
 import cn.jpush.im.android.api.JMessageClient;
 import cn.jpush.im.android.api.callback.GetUserInfoCallback;
 import cn.jpush.im.android.api.event.ContactNotifyEvent;
@@ -45,10 +43,13 @@ public class FriendRecommendModel extends BaseModel implements FriendRecommendCo
                         LogUtils.e("handle_event","new recommendEntry with user: "+friend.getNickname());
                         FriendRecommendEntry newEntry = new FriendRecommendEntry(friend.getUserID(),
                                 friend.getUserName(), friend.getNotename(), friend.getNickname(),
-                                friend.getAppKey(), friend.getAvatar(), friend.getDisplayName(),
+                                friend.getAppKey(), null, friend.getDisplayName(),
                                 reason, otherState ,user);
                         newEntry.save();
                         LogUtils.e("find_user",friend.getUserName());
+                        Integer cacheNum = SpUtils.getCachedNewFriendNum() + 1;
+                        LogUtils.e("cacheNum",cacheNum.toString());
+                        SpUtils.setCachedNewFriendNum(cacheNum);
                     }
                     else{
                         LogUtils.e("getUserInfo Fail",s);
@@ -58,9 +59,6 @@ public class FriendRecommendModel extends BaseModel implements FriendRecommendCo
             });
             LogUtils.e("onEvent","end");
         }
-        Integer cacheNum = SpUtils.getCachedNewFriendNum() + 1;
-        LogUtils.e("cacheNum",cacheNum.toString());
-        SpUtils.setCachedNewFriendNum(cacheNum);
     }
 
     /*

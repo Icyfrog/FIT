@@ -17,6 +17,7 @@ import com.example.fitmvp.base.BaseActivity;
 import com.example.fitmvp.base.BaseAdapter;
 import com.example.fitmvp.contract.FriendSearchContract;
 import com.example.fitmvp.presenter.FriendSearchPresenter;
+import com.example.fitmvp.utils.LogUtils;
 import com.example.fitmvp.utils.UserUtils;
 
 import java.util.ArrayList;
@@ -72,6 +73,7 @@ public class FriendSearchActivity extends BaseActivity<FriendSearchPresenter> im
     protected void initView() {
         ButterKnife.bind(this);
         recyclerView.setLayoutManager(linearLayoutManager);
+        initAdapter();
     }
 
     @Override
@@ -100,18 +102,16 @@ public class FriendSearchActivity extends BaseActivity<FriendSearchPresenter> im
                 holder.setText(R.id.friend_name,user.getNickname());
                 holder.setText(R.id.friend_account,user.getUserName());
                 // 设置头像
-                if(user.getAvatar()!=null){
-                    holder.setImage(R.id.friend_photo, BitmapFactory.decodeFile(user.getAvatar()));
-                }
-                else{
-                    JMessageClient.getUserInfo(user.getUserName(), new GetUserInfoCallback() {
-                        @Override
-                        public void gotResult(int i, String s, UserInfo userInfo) {
-                            if(i == 0){
-                                userInfo.getAvatarBitmap(new GetAvatarBitmapCallback() {
+//                    JMessageClient.getUserInfo(user.getUserName(), new GetUserInfoCallback() {
+//                        @Override
+//                        public void gotResult(int i, String s, UserInfo userInfo) {
+//                            if(i == 0){
+//                                LogUtils.e("debug", "start to get friend avatar");
+                                user.getAvatarBitmap(new GetAvatarBitmapCallback() {
                                     @Override
                                     public void gotResult(int i, String s, Bitmap bitmap) {
                                         if (i == 0) {
+                                            LogUtils.e("debug", "get friend avatar");
                                             holder.setImage(R.id.friend_photo,bitmap);
                                         }else {
                                             // 设置为默认头像
@@ -119,10 +119,9 @@ public class FriendSearchActivity extends BaseActivity<FriendSearchPresenter> im
                                         }
                                     }
                                 });
-                            }
-                        }
-                    });
-                }
+//                            }
+//                        }
+//                    });
             }
         };
         adapter.setOnItemClickListener(new BaseAdapter.OnItemClickListener() {
@@ -131,17 +130,25 @@ public class FriendSearchActivity extends BaseActivity<FriendSearchPresenter> im
                 final Intent intent = new Intent(FriendSearchActivity.this,FriendDetailActivity.class);
                 // 传参
                 UserInfo friend = searchList.get(position);
-                intent.putExtra("isFriend",mPresenter.isFriend(friend));
+                Boolean isFriend = friend.isFriend();
+                intent.putExtra("isFriend",isFriend);
                 intent.putExtra("phone",friend.getUserName());
                 intent.putExtra("nickname",friend.getNickname());
                 intent.putExtra("notename",friend.getNotename());
-                intent.putExtra("avatar",friend.getAvatar());
+                intent.putExtra("avatar",friend.getAvatarFile().getAbsolutePath());
                 intent.putExtra("gender", UserUtils.getGender(friend));
                 intent.putExtra("birthday",UserUtils.getBirthday(friend));
-                intent.putExtra("buttonType",0);
+                Integer buttonType = 0;
+                if (isFriend){
+                    buttonType = 1;
+                }
+                intent.putExtra("buttonType",buttonType);
                 startActivity(intent);
                 FriendSearchActivity.this.finish();
             }
+
+            @Override
+            public void onItemLongClick(View view, int position){}
         });
         recyclerView.setAdapter(adapter);
     }
@@ -150,8 +157,9 @@ public class FriendSearchActivity extends BaseActivity<FriendSearchPresenter> im
         return inputPhone.getText().toString().trim();
     }
 
-    @Override
-    public void setSearchList(List<UserInfo> list) {
+    public void updateList(List<UserInfo> list){
         searchList = list;
+        adapter.setDataList(searchList);
+        adapter.notifyDataSetChanged();
     }
 }

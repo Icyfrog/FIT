@@ -27,12 +27,10 @@ import com.example.fitmvp.view.activity.FriendDetailActivity;
 import com.example.fitmvp.view.activity.FriendRecommendActivity;
 import com.example.fitmvp.view.activity.FriendSearchActivity;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.nostra13.universalimageloader.utils.L;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import butterknife.ButterKnife;
 import cn.jpush.im.android.api.JMessageClient;
 import cn.jpush.im.android.api.callback.GetAvatarBitmapCallback;
 import cn.jpush.im.android.api.callback.GetUserInfoCallback;
@@ -63,12 +61,12 @@ public class FragmentFrdList extends BaseFragment<FriendPresenter>
 
     @Override
     protected void initView(){
-        recyclerView = ButterKnife.findById(view,R.id.friend_list);
+        recyclerView = view.findViewById(R.id.friend_list);
         recyclerView.setLayoutManager(linearLayoutManager);
 
-        addFriend = ButterKnife.findById(view,R.id.add_friend);
-        recommends = ButterKnife.findById(view,R.id.friend_recommend);
-        cachedNewFriendNum = ButterKnife.findById(view,R.id.friend_unread_msg);
+        addFriend = view.findViewById(R.id.add_friend);
+        recommends = view.findViewById(R.id.friend_recommend);
+        cachedNewFriendNum = view.findViewById(R.id.friend_unread_msg);
         //注册刷新Fragment数据的方法
         registerReceiver();
     }
@@ -94,7 +92,7 @@ public class FragmentFrdList extends BaseFragment<FriendPresenter>
     public void initData(){
 
         mPresenter.initCacheNum();
-
+        mPresenter.initFriendList();
         // 获取好友列表
         friendList = mPresenter.getFriendList();
         // 创建adapter实例
@@ -111,6 +109,7 @@ public class FragmentFrdList extends BaseFragment<FriendPresenter>
 
                 // 设置头像
                 if(data.avatar!=null){
+                    LogUtils.e("avatar",data.avatar);
                     holder.setImage(R.id.friend_photo, BitmapFactory.decodeFile(data.avatar));
                 }
                 else{
@@ -129,6 +128,7 @@ public class FragmentFrdList extends BaseFragment<FriendPresenter>
                                         }
                                     }
                                 });
+
                             }
                         }
                     });
@@ -153,6 +153,9 @@ public class FragmentFrdList extends BaseFragment<FriendPresenter>
                 intent.putExtra("buttonType",1);
                 startActivity(intent);
             }
+
+            @Override
+            public void onItemLongClick(View view, int position){}
         });
         //设置adapter
         recyclerView.setAdapter(adapter);
@@ -215,14 +218,15 @@ public class FragmentFrdList extends BaseFragment<FriendPresenter>
         broadcastManager = LocalBroadcastManager.getInstance(getActivity());
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction("updateFriendList");
+        intentFilter.addAction("updateFriendNoteName");
         broadcastManager.registerReceiver(mRefreshReceiver, intentFilter);
     }
 
     private BroadcastReceiver mRefreshReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            String refresh= intent.getStringExtra("refreshInfo");
-            if ("yes".equals(refresh)) {
+            String action = intent.getAction();
+            if ("updateFriendList".equals(action) || "updateFriendNoteName".equals(action)) {
                 // 在主线程中刷新UI，用Handler来实现
                 new Handler().post(new Runnable() {
                     public void run() {
@@ -234,10 +238,10 @@ public class FragmentFrdList extends BaseFragment<FriendPresenter>
         }
     };
 
-    //注销广播
     @Override
     public void onDetach() {
         super.onDetach();
+        //注销广播
         broadcastManager.unregisterReceiver(mRefreshReceiver);
     }
 }

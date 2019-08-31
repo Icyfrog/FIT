@@ -3,11 +3,11 @@ package com.example.fitmvp.model;
 import com.example.fitmvp.BaseApplication;
 import com.example.fitmvp.base.BaseModel;
 import com.example.fitmvp.bean.ConversationEntity;
-import com.example.fitmvp.chat.utils.TimeFormat;
-import com.example.fitmvp.contract.MessageContract;
 import com.example.fitmvp.utils.LogUtils;
-import com.nostra13.universalimageloader.utils.L;
+import com.example.fitmvp.utils.TimeFormat;
+import com.example.fitmvp.contract.MessageContract;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -80,8 +80,14 @@ public class MessageModel extends BaseModel implements MessageContract.Model {
         entity.setNewMsgNum(conv.getUnReadMsgCnt());
         // 单聊
         UserInfo user = (UserInfo) conv.getTargetInfo();
-        // 头像
-        entity.setAvatar(user.getAvatar());
+        File file = user.getAvatarFile();
+        if(file!=null){
+            // 头像
+            entity.setAvatar(user.getAvatarFile().getAbsolutePath());
+        }
+        else{
+            entity.setAvatar(null);
+        }
         // 显示的名字
         String name = user.getNotename();
         if (name == null || name.equals("")) {
@@ -106,5 +112,40 @@ public class MessageModel extends BaseModel implements MessageContract.Model {
         String content = ((TextContent) latestMessage.getContent()).getText();
         entity.setMessage(content);
         return entity;
+    }
+
+    // 删除对话返回true，没有可删除的对话返回false
+    public Boolean deleteConv(String username){
+        ConversationEntity entity = findConv(username);
+        if(entity!=null){
+            JMessageClient.deleteSingleConversation(username, null);
+            list.remove(entity);
+            return true;
+        }
+        else{
+            return false;
+        }
+    }
+
+    // 删除会话中的消息，不删除会话
+    public Boolean deleteMsg(ConversationEntity entity){
+        Conversation conv = JMessageClient.getSingleConversation(entity.getUsername());
+        if(conv!=null){
+            conv.deleteAllMessage();
+            list.remove(entity);
+            return true;
+        }
+        else{
+            return false;
+        }
+    }
+
+    private ConversationEntity findConv(String username){
+        for(ConversationEntity entity:list){
+            if(entity.getUsername().equals(username)){
+                return entity;
+            }
+        }
+        return null;
     }
 }
